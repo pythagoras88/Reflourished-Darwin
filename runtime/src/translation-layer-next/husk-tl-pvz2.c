@@ -3322,10 +3322,19 @@ static void cheats_install_hooks(void)
     cheat_install_one(hook, &g_cheat_gem, cheat_gem_value);
 }
 
-/* The refill, on the game's own thread after a frame. Only in PlayingLevel:
- * the level's own start sets its count before then. */
+/* The refill, on the game's own thread after a frame, in PlayingLevel only.
+ *
+ * It never gives plant food the game has not: it remembers the most the game
+ * itself has given on this board (the level's start, a collected drop) and
+ * puts a used one back, up to that. A level that starts at 0 -- the scripted
+ * tutorials do, and they decide when the player gets plant food; one granted
+ * early left a fresh save's first level waiting for a step that never came,
+ * ignoring every tap -- is left alone until the game grants some. The mark
+ * starts over on a new board and whenever the board leaves PlayingLevel. */
 static void guest_refill_plant_food(void)
 {
+    static uint64_t marked_board;   /* the board the mark belongs to */
+    static uint8_t given;           /* the most plant food the game has given on it */
     static int checked;   /* 0 not yet, 1 the setter is the expected one, -1 it is not */
     if (!atomic_load(&g_unlimited_plant_food)) return;
     if (!checked) {
@@ -3339,15 +3348,24 @@ static void guest_refill_plant_food(void)
     uint64_t board = guest_call2(guest_code(GUEST_BOARD_GETTER), 0, 0, &ok);
     int32_t state = -1;
     uint8_t count = 0, max = 0;
-    if (!ok || !board ||
-        !guest_read_bytes(board + 0xe0, &state, sizeof state) || state != 5 ||
-        !guest_read_bytes(board + GUEST_BOARD_PLANT_FOOD, &count, sizeof count) ||
-        !guest_read_bytes(board + GUEST_BOARD_PLANT_FOOD_MAX, &max, sizeof max) ||
-        count >= max)
+    if (!ok || !board || !guest_read_bytes(board + 0xe0, &state, sizeof state))
         return;
-    guest_call2(guest_code(GUEST_SET_PLANT_FOOD), board, max, &ok);
-    tl_log_line("pvz2: unlimited plant food: %s %d -> %d", ok ? "refilled" : "could not refill",
-                (int)count, (int)max);
+    if (board != marked_board || state != 5) {
+        marked_board = board;
+        given = 0;
+    }
+    if (state != 5 ||
+        !guest_read_bytes(board + GUEST_BOARD_PLANT_FOOD, &count, sizeof count) ||
+        !guest_read_bytes(board + GUEST_BOARD_PLANT_FOOD_MAX, &max, sizeof max))
+        return;
+    if (count >= given) {
+        given = count;   /* the game gave this many (or one more): nothing was used */
+        return;
+    }
+    uint8_t target = given > max ? max : given;
+    guest_call2(guest_code(GUEST_SET_PLANT_FOOD), board, target, &ok);
+    tl_log_line("pvz2: unlimited plant food: %s %d -> %d (the most the game gave)",
+                ok ? "refilled" : "could not refill", (int)count, (int)target);
 }
 
 /* ---- fast-forward, plant food and power-ups -----------------------------

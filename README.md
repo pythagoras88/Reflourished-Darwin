@@ -39,7 +39,7 @@ builds come from its **Actions** tab (see below). Everything else works the same
 
 | Cheat | What it does |
 |---|---|
-| **Unlimited plant food** | The counter fills back up a moment after you use one, in every level that has plant food. |
+| **Unlimited plant food** | Once the game has given you plant food in a level, a used one comes back a moment later. It never gives you plant food the game hasn't, so the first levels' tutorials still decide when you get it. |
 | **Sun multiplier** (×2 to ×20) | Every sun you collect is worth more: ×10 makes a 25 sun worth 250. The level's own sun limit still applies. |
 | **Coin multiplier** (×2 to ×10) | Every silver, gold and diamond coin you collect on the lawn is worth more. Fake coins and level rewards are not changed. |
 | **Gem multiplier** (×2 to ×10) | Every gem you collect on the lawn is worth more. |
@@ -90,7 +90,7 @@ data.
   * `Esc` pauses and resumes. The keys rest while the game is paused.
   * On the Mac, Settings (`Cmd-,`) lets you pick any keys.
 * **Cheats** (off unless you turn them on)
-  * **Unlimited plant food**: the counter fills back up a moment after you use one.
+  * **Unlimited plant food**: once the game has given you plant food, a used one comes back a moment later.
   * **Sun, coin and gem multipliers**: every sun, coin (silver, gold and diamond) and gem you
     collect on the lawn is worth more (sun ×10: 250 instead of 25), up to the game's own limits.
   * On the Mac they are in Settings (`Cmd-,`) > General; on iPhone and iPad in the Settings app,

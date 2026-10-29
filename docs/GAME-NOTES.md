@@ -83,9 +83,14 @@ ones read there before it hooks or calls it, and leaves a build where they moved
 | 0x78f3d4 | a collected gem's value (`CollectableGem`) | the gem multiplier's hook |
 | 0xaa4070, board +0x184 | `Board::AddSun`, `m_sunCurrency` | (not hooked, not written) |
 
-- **Unlimited plant food** is the setter with the max, from the frame loop every 10 frames, in
-  PlayingLevel only and only when the count is below the max. A level without plant food has a
-  max of 0 and is left alone.
+- **Unlimited plant food** is the setter, from the frame loop every 10 frames, in PlayingLevel
+  only. It remembers the most plant food the game itself has given on this board (the level's
+  start, a collected drop) and puts a used one back, up to that; the mark starts over on a new
+  board and whenever the board leaves PlayingLevel. It never gives plant food the game has not:
+  the first levels are scripted tutorials that decide when the player gets plant food, and an
+  early grant (the first version topped up to the max at once) left a fresh save's first level
+  waiting for a step that never came, ignoring every tap. A level without plant food has a max
+  of 0 and is left alone.
 - **The multipliers** hook the value functions. Their callers are the award, the click that starts
   the flight (`0xa9cac8`, `0xa9cb50`), the sun in flight (`0xaa3760`, which AddSun's cap reads) and
   the level statistics, so scaling a value at its source keeps them all agreeing. Fake coins
