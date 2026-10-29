@@ -50,6 +50,11 @@ All of them are **off until you turn them on**, and a change applies while you p
   app's first launch). A change takes effect when you switch back to the game.
 * **Mac:** Settings (`Cmd-,`) > General > Cheats.
 
+**It is its own app.** This fork's builds use the app ID `io.github.pythagoras88.reflourished-modded`, so they install
+beside the original (`io.github.oenderg.reflourished-darwin`) instead of replacing it, with their own saves on iPhone and
+iPad. The downloads are named like `PvZ2-Reflourished-modded-1.4.2-Darwin-1.2.0.ipa`. What changed, and when, is in
+[CHANGELOG.md](CHANGELOG.md).
+
 They work through the game's own code: plant food is refilled with the game's own setter, and the
 multipliers scale a collected item's value where the game reads it, so the counters, the sun cap
 and the collection animation all agree. Nothing is written into your save directly. The details
