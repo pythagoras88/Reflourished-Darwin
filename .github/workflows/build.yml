@@ -152,7 +152,7 @@ jobs:
         if: github.event.inputs.publish != 'true'
         uses: actions/upload-artifact@v7
         with:
-          path: release/${{ steps.metadata.outputs.prefix }}-iOS.ipa
+          path: release/${{ steps.metadata.outputs.prefix }}.ipa
           archive: false
           retention-days: 14
           if-no-files-found: ignore
@@ -161,7 +161,7 @@ jobs:
         if: github.event.inputs.publish != 'true'
         uses: actions/upload-artifact@v7
         with:
-          path: release/${{ steps.metadata.outputs.prefix }}-iOS-Full.ipa
+          path: release/${{ steps.metadata.outputs.prefix }}-Full.ipa
           archive: false
           retention-days: 14
           if-no-files-found: ignore
@@ -215,7 +215,7 @@ jobs:
           REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
-          python3 scripts/update-altstore-source.py "release/$PREFIX-iOS.ipa" --tag "$TAG" \
+          python3 scripts/update-altstore-source.py "release/$PREFIX.ipa" --tag "$TAG" \
             --changelog "$(python3 scripts/release-notes.py --whats-new --version "$VERSION" --format text)"
           python3 scripts/update-altstore-source.py --check
           git config user.name "github-actions[bot]"
