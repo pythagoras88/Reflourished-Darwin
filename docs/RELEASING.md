@@ -23,7 +23,8 @@ for a machine, so this repository keeps the APK as an asset of a **draft** relea
 "Build inputs (never publish)" (tag `build-inputs`, which a draft does not create). A draft is
 visible only to people with write access to the repository, and to the workflow's own token, so
 nothing is published. The workflow downloads `PvZ2-Reflourished-<game version>.apk` from it when
-`apk_url` is empty. For a new game version, attach its APK to that draft (Releases > the draft >
+`apk_url` is empty (failing that, the same name in any draft, then any `.apk` in a draft; `build.sh`
+refuses a different build). The `runner` input picks another Mac when GitHub's arm64 Macs are queued. For a new game version, attach its APK to that draft (Releases > the draft >
 Edit). **Never publish it.** A fork has no such draft: it passes a link.
 
 The run uses a `macos-26` runner; expect the better part of an hour the first time. For both

@@ -54,6 +54,8 @@ mkdir -p "$WORK"
 GAME="$ROOT/data/game-1.4.2.json"
 HOOKS="$ROOT/data/hooks-1.4.2.json"
 json() { python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(eval(sys.argv[2]))" "$GAME" "$1"; }
+# The driver's own hook sites (the cheats' value functions), baked beside the mod's table.
+DRIVER_HOOK_SITES="$(json '"|".join(d.get("driver_hook_sites", []))')"
 step() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
 
 # ---------------------------------------------------------------- the game files
@@ -148,7 +150,8 @@ if [ "$WANT_IOS" = 1 ] || [ "$WANT_IOS_SIM" = 1 ]; then
         step "the game's code for iOS: reused from the last build"
     else
         step "converting the game's code for iOS"
-        HOOKS="$HOOKS" bash "$ROOT/converter/build-ios-dylibs.sh" "$LIBS" "$WORK/ios-dylibs"
+        HOOKS="$HOOKS" DRIVER_HOOK_SITES="$DRIVER_HOOK_SITES" \
+            bash "$ROOT/converter/build-ios-dylibs.sh" "$LIBS" "$WORK/ios-dylibs"
         python3 "$ROOT/converter/check-build.py" "$WORK/ios-dylibs"
     fi
 
@@ -185,7 +188,7 @@ if [ "$WANT_MAC" = 1 ]; then
         step "the game's code for the Mac: reused from the last build"
     else
         step "converting the game's code for the Mac"
-        HOOKS="$HOOKS" GLES="$ANGLE_MAC/libGLESv2.dylib" \
+        HOOKS="$HOOKS" DRIVER_HOOK_SITES="$DRIVER_HOOK_SITES" GLES="$ANGLE_MAC/libGLESv2.dylib" \
             bash "$ROOT/converter/build-macos-dylibs.sh" "$LIBS" "$WORK/macos-dylibs"
     fi
 

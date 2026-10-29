@@ -143,6 +143,34 @@ static bool confirm_quit(void)
  * standard displays" on, twice that on a display that is not Retina (drawn
  * large and scaled down, the way macOS's own scaled modes do it). */
 static NSString *const kRenderSharp = @"renderSharp";
+/* The cheats (the settings window's General pane), all off by default: read at
+ * start and again whenever the defaults change, so a change acts at once. The
+ * environment wins, for the tests. Only a change is passed on (the defaults also
+ * change when the window moves). */
+static void apply_cheats(void)
+{
+    static int was_food = -1, was_sun = -1, was_coin = -1, was_gem = -1;
+    NSUserDefaults *d = [NSUserDefaults standardUserDefaults];
+    const char *food_env = getenv("TL_PVZ2_UNLIMITED_PLANT_FOOD");
+    const char *sun_env = getenv("TL_PVZ2_SUN_MULTIPLIER");
+    const char *coin_env = getenv("TL_PVZ2_COIN_MULTIPLIER");
+    const char *gem_env = getenv("TL_PVZ2_GEM_MULTIPLIER");
+    int food = (food_env && *food_env) ? food_env[0] == '1' : [d boolForKey:@"unlimitedPlantFood"];
+    int sun = (sun_env && *sun_env) ? atoi(sun_env) : (int)[d integerForKey:@"sunMultiplier"];
+    int coin = (coin_env && *coin_env) ? atoi(coin_env) : (int)[d integerForKey:@"coinMultiplier"];
+    int gem = (gem_env && *gem_env) ? atoi(gem_env) : (int)[d integerForKey:@"gemMultiplier"];
+    if (sun < 1) sun = 1;
+    if (coin < 1) coin = 1;
+    if (gem < 1) gem = 1;
+    if (food != was_food) tl_pvz2_set_unlimited_plant_food(food);
+    if (sun != was_sun) tl_pvz2_set_sun_multiplier(sun);
+    if (coin != was_coin) tl_pvz2_set_coin_multiplier(coin);
+    if (gem != was_gem) tl_pvz2_set_gem_multiplier(gem);
+    was_food = food;
+    was_sun = sun;
+    was_coin = coin;
+    was_gem = gem;
+}
 /* While the game is starting, its surface keeps the size it started with: a
  * new size then crashes it a few seconds later -- the size the host writes
  * into the game's original screen size (app + 0x86c) leaves its start-up half
@@ -2598,6 +2626,7 @@ static void start_updater(void)
                                                       usingBlock:^(NSNotification *note) {
             (void)note;
             [g_view followDisplayScale];
+            apply_cheats();
             /* the settings window's "Check for updates automatically" */
             id checks = [[NSUserDefaults standardUserDefaults] objectForKey:@"SUEnableAutomaticChecks"];
             if (g_updater && checks && [checks boolValue] != g_updater.updater.automaticallyChecksForUpdates)
@@ -2809,6 +2838,8 @@ static void start_updater(void)
     tl_pvz2_set_native_shovel(native_shovel_mode());
     /* The native seed pick: the game's own press. */
     tl_pvz2_set_seed_pick(native_seed_pick_mode());
+    /* The cheats, as the settings window left them. */
+    apply_cheats();
 
     /* The guest's own memory warning. The game's Java has no memory callback
      * at all, so the host is the activity: the host is told about the memory

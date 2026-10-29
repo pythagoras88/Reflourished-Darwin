@@ -836,6 +836,36 @@ static void display_size_pixels(UIWindowScene *windowScene, int *out_w, int *out
  * whatever size the surface is. 1 is the touch at the button the guest
  * reports (the old way, kept for the tests), 2 is the guest's own function,
  * 0 turns it off. */
+/* The cheats, all off by default. iOS's own Settings app shows them (the
+ * bundle's Settings.bundle, Settings > the app's name) and writes them into the
+ * app's defaults; they are read when the game starts and whenever the app comes
+ * back to the front, which is when a change made there arrives. The environment
+ * wins, for the tests. Only a change is passed on. */
+static void apply_cheats(void)
+{
+    static int was_food = -1, was_sun = -1, was_coin = -1, was_gem = -1;
+    NSUserDefaults *d = [NSUserDefaults standardUserDefaults];
+    const char *food_env = getenv("TL_PVZ2_UNLIMITED_PLANT_FOOD");
+    const char *sun_env = getenv("TL_PVZ2_SUN_MULTIPLIER");
+    const char *coin_env = getenv("TL_PVZ2_COIN_MULTIPLIER");
+    const char *gem_env = getenv("TL_PVZ2_GEM_MULTIPLIER");
+    int food = (food_env && *food_env) ? food_env[0] == '1' : [d boolForKey:@"unlimitedPlantFood"];
+    int sun = (sun_env && *sun_env) ? atoi(sun_env) : (int)[d integerForKey:@"sunMultiplier"];
+    int coin = (coin_env && *coin_env) ? atoi(coin_env) : (int)[d integerForKey:@"coinMultiplier"];
+    int gem = (gem_env && *gem_env) ? atoi(gem_env) : (int)[d integerForKey:@"gemMultiplier"];
+    if (sun < 1) sun = 1;
+    if (coin < 1) coin = 1;
+    if (gem < 1) gem = 1;
+    if (food != was_food) tl_pvz2_set_unlimited_plant_food(food);
+    if (sun != was_sun) tl_pvz2_set_sun_multiplier(sun);
+    if (coin != was_coin) tl_pvz2_set_coin_multiplier(coin);
+    if (gem != was_gem) tl_pvz2_set_gem_multiplier(gem);
+    was_food = food;
+    was_sun = sun;
+    was_coin = coin;
+    was_gem = gem;
+}
+
 static int native_shovel_mode(void)
 {
     const char *env = getenv("TL_PVZ2_NATIVE_SHOVEL");
@@ -1996,6 +2026,8 @@ static NSDictionary *obb_info(void)
     tl_pvz2_set_native_shovel(native_shovel_mode());
     /* The native seed pick: the game's own press. */
     tl_pvz2_set_seed_pick(native_seed_pick_mode());
+    /* The cheats, as the Settings app left them. */
+    apply_cheats();
     /* The guest's own memory warning (experimental; off by default). */
     const char *lowmem = getenv("TL_PVZ2_LOW_MEMORY");
     tl_pvz2_set_low_memory_warning(lowmem && lowmem[0] == '1');
@@ -2098,6 +2130,9 @@ static NSDictionary *obb_info(void)
 {
     (void)scene;
     tl_log_line("ios: will enter foreground");
+    /* A change made in the Settings app arrives now. */
+    [[NSUserDefaults standardUserDefaults] synchronize];
+    apply_cheats();
 }
 @end
 
