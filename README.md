@@ -48,6 +48,12 @@ and the mod's own content built in.
     power-ups from left to right.
   * `Esc` pauses and resumes. The keys rest while the game is paused.
   * On the Mac, Settings (`Cmd-,`) lets you pick any keys.
+* **Cheats** (off unless you turn them on)
+  * **Unlimited plant food**: the counter fills back up a moment after you use one.
+  * **Sun, coin and gem multipliers**: every sun, coin (silver, gold and diamond) and gem you
+    collect on the lawn is worth more (sun ×10: 250 instead of 25), up to the game's own limits.
+  * On the Mac they are in Settings (`Cmd-,`) > General; on iPhone and iPad in the Settings app,
+    under the game's name.
 * **Mac window**
   * Keeps the game's shape at any size, or, in Settings, adapts to any shape from 4:3 to 21:9.
   * Drawn at the sharpness of the display it is on; Settings can draw it sharper on a

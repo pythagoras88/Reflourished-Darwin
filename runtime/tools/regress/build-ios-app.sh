@@ -242,6 +242,60 @@ if [ -n "${ICON_PNG:-}" ]; then
     echo "==> set Reflourished's icon"
 fi
 
+# ---------------------------------------------------------------- the Settings app's page
+# The cheats have no screen of their own on iOS: iOS's Settings app shows this page under
+# the app's name and writes the values into the app's defaults, which the host reads when
+# the game starts and when the app comes back to the front (pvz2-ios.m, apply_cheats).
+# The keys are the Mac settings window's.
+mkdir -p "$APP/Settings.bundle"
+cat > "$APP/Settings.bundle/Root.plist" <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>PreferenceSpecifiers</key>
+    <array>
+        <dict>
+            <key>Type</key><string>PSGroupSpecifier</string>
+            <key>Title</key><string>Cheats</string>
+            <key>FooterText</key><string>Unlimited plant food fills the counter back up a moment after you use one, in every level that has plant food. The multipliers make every sun, coin (silver, gold and diamond) and gem you collect on the lawn worth more (sun x10: 250 instead of 25), up to the game's own limits; level rewards are not changed. A change takes effect when you go back to the game.</string>
+        </dict>
+        <dict>
+            <key>Type</key><string>PSToggleSwitchSpecifier</string>
+            <key>Title</key><string>Unlimited plant food</string>
+            <key>Key</key><string>unlimitedPlantFood</string>
+            <key>DefaultValue</key><false/>
+        </dict>
+        <dict>
+            <key>Type</key><string>PSMultiValueSpecifier</string>
+            <key>Title</key><string>Sun multiplier</string>
+            <key>Key</key><string>sunMultiplier</string>
+            <key>DefaultValue</key><integer>1</integer>
+            <key>Titles</key><array><string>Off</string><string>x2</string><string>x3</string><string>x5</string><string>x10</string><string>x20</string></array>
+            <key>Values</key><array><integer>1</integer><integer>2</integer><integer>3</integer><integer>5</integer><integer>10</integer><integer>20</integer></array>
+        </dict>
+        <dict>
+            <key>Type</key><string>PSMultiValueSpecifier</string>
+            <key>Title</key><string>Coin multiplier</string>
+            <key>Key</key><string>coinMultiplier</string>
+            <key>DefaultValue</key><integer>1</integer>
+            <key>Titles</key><array><string>Off</string><string>x2</string><string>x3</string><string>x5</string><string>x10</string></array>
+            <key>Values</key><array><integer>1</integer><integer>2</integer><integer>3</integer><integer>5</integer><integer>10</integer></array>
+        </dict>
+        <dict>
+            <key>Type</key><string>PSMultiValueSpecifier</string>
+            <key>Title</key><string>Gem multiplier</string>
+            <key>Key</key><string>gemMultiplier</string>
+            <key>DefaultValue</key><integer>1</integer>
+            <key>Titles</key><array><string>Off</string><string>x2</string><string>x3</string><string>x5</string><string>x10</string></array>
+            <key>Values</key><array><integer>1</integer><integer>2</integer><integer>3</integer><integer>5</integer><integer>10</integer></array>
+        </dict>
+    </array>
+</dict>
+</plist>
+PLIST
+echo "==> the cheats are in the Settings app"
+
 
 # Ad-hoc by default: enough to check the build and its load commands locally.
 # A stock device needs a real identity. With SIGN_PROFILE the profile's own

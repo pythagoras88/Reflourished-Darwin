@@ -29,13 +29,18 @@ on:
         description: "Release tag (leave empty: v<VERSION>)"
         required: false
         default: ""
+      runner:
+        description: "The Mac that builds (another one when GitHub's arm64 Macs are queued; the Intel one builds iPhone/iPad only)"
+        type: choice
+        options: [macos-26, macos-15, macos-15-intel]
+        default: macos-26
 
 permissions:
   contents: write
 
 jobs:
   build:
-    runs-on: macos-26
+    runs-on: ${{ github.event.inputs.runner || 'macos-26' }}
     timeout-minutes: 150
     steps:
       - uses: actions/checkout@v7
@@ -81,12 +86,17 @@ jobs:
         run: |
           set -euo pipefail
           if [ -n "$APK_URL" ]; then echo "apk=$APK_URL" >> "$GITHUB_OUTPUT"; exit 0; fi
-          # The repository's own copy: an asset of the draft release "build-inputs", which only
-          # people with write access can see (docs/RELEASING.md). A fork has none: give a link.
+          # The repository's own copy: an asset of a draft release, which only people with write
+          # access can see (docs/RELEASING.md). The "build-inputs" draft's $name first, then that
+          # name in any draft, then any .apk in a draft; build.sh refuses a different build.
           name="PvZ2-Reflourished-$GAME.apk"
-          id="$(gh api "repos/$REPOSITORY/releases" --paginate \
-            --jq ".[] | select(.draft and .tag_name == \"build-inputs\") | .assets[] | select(.name == \"$name\") | .id" | head -1)"
-          [ -n "$id" ] || { echo "no APK link given and no $name in a build-inputs draft release" >&2; exit 1; }
+          assets="$(gh api "repos/$REPOSITORY/releases" --paginate \
+            --jq '.[] | select(.draft) | .tag_name as $t | .assets[] | [$t, .name, (.id | tostring)] | @tsv')"
+          id="$(awk -F'\t' -v n="$name" '$1 == "build-inputs" && $2 == n { print $3; exit }' <<< "$assets")"
+          [ -n "$id" ] || id="$(awk -F'\t' -v n="$name" '$2 == n { print $3; exit }' <<< "$assets")"
+          [ -n "$id" ] || id="$(awk -F'\t' 'tolower($2) ~ /\.apk$/ { print $3; exit }' <<< "$assets")"
+          [ -n "$id" ] || { echo "no APK link given and no .apk in a draft release" >&2; exit 1; }
+          echo "the APK: draft asset $id ($(awk -F'\t' -v i="$id" '$3 == i { print $1 "/" $2; exit }' <<< "$assets"))"
           mkdir -p inputs
           gh api -H "Accept: application/octet-stream" "repos/$REPOSITORY/releases/assets/$id" > "inputs/$name"
           ls -l "inputs/$name"

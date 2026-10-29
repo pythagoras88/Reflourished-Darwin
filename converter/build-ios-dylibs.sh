@@ -113,6 +113,16 @@ if [ -n "${HOOKS:-}" ]; then
     echo "==> baking the mod's hooks from $HOOKS"
     HOOK_ARG=(--hooks "$HOOKS")
 fi
+# DRIVER_HOOK_SITES names the driver's own sites ("|" between them, from the game data file's
+# driver_hook_sites): the player's switches that need a hook, which the mod's table does not
+# carry. A baked site with no replacement runs the original code, so a switch that is off
+# costs nothing.
+IFS='|' read -r -a DRIVER_SITES <<< "${DRIVER_HOOK_SITES:-}"
+for site in ${DRIVER_SITES[@]+"${DRIVER_SITES[@]}"}; do
+    [ -n "$site" ] || continue
+    echo "==> baking the driver's hook at $site"
+    HOOK_ARG+=(--hook-site "$site")
+done
 convert libPVZ2 2 --shim "$OUT/libc++_shared.dylib" --shim "$OUT/libNimble.dylib" \
                   ${HOOK_ARG[@]+"${HOOK_ARG[@]}"}
 convert libRFLib 3 --shim "$OUT/libPVZ2.dylib" --shim "$OUT/libc++_shared.dylib" \

@@ -26,6 +26,7 @@
 #include "husk-tl-pvz2.h"
 #include "husk-tl-cdn.h"
 
+#include <dlfcn.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <pthread.h>
@@ -2441,6 +2442,7 @@ static void *raise_on_a_host_thread(void *arg)
 }
 
 static void *gl_main(void *arg);
+static void cheats_install_hooks(void);
 
 bool tl_pvz2_start(const tl_ga_config *cfg)
 {
@@ -2597,6 +2599,9 @@ bool tl_pvz2_start(const tl_ga_config *cfg)
         tl_lib *rfl = load("libRFLib.so");
         if (rfl) tl_ld_init(rfl);
     }
+    /* The player's own switches that need a hook, after the mod's, so that the
+     * mod has had every one of its sites first (none of ours is one of them). */
+    cheats_install_hooks();
     if (getenv("TL_PVZ2_PROBE")) {
         tl_ld_probe(game, 0x166bf4c, probe_changed);
         tl_ld_probe(game, 0x166e59c, probe_changed_lambda);
@@ -3163,6 +3168,186 @@ static void guest_collect_sun(void)
     tl_log_line("pvz2: the collect shortcut: sun before=%d; requested %d sun(s), value=%d, %d coin(s), %d gem(s), %d plant food, %d sprout(s), scanned=%d%s",
                 sun_before, suns, value, coins, gems, plantfood, sprouts, seen,
                 ok && destroy_ok && seen < 4096 ? " (the native flight awards on arrival)" : " (stopped: native state unavailable)");
+}
+
+/* ---- the cheats: unlimited plant food and the sun, coin and gem multipliers
+ *
+ * The player's own switches, all off by default. They are the one place the
+ * driver changes the game's numbers, so each one goes through the game's own
+ * code and lets it do its bookkeeping (the counter's redraw, the caps, the
+ * value in flight); none writes a counter itself.
+ *
+ * Plant food. Board::m_plantfoodCount is one byte at board+0x140 and
+ * m_plantfoodCountMax one byte at board+0x2e6 (the board's own property
+ * registration, guest 0xa97f38 and 0xa97fa0, names both). The game's setter,
+ * 0xaa390c(board, count), clamps to [0, max], stores the count and tells the
+ * counter. Using plant food is that setter with count - 1 (the cursor's three
+ * use paths, 0xc34f90, 0xc352e0 and 0xc35590), so the refill is the same call
+ * with the max, the frame after. A level without plant food has a max of 0
+ * and is left as it is.
+ *
+ * Sun, coins and gems. The board's collect award (0xa9d838) asks each
+ * collected object's class for its value and hands it on: a sun's
+ * (CollectableSun, 0x75a96c) to Board::AddSun (0xaa4070), a coin's
+ * (CollectableCoin, 0x9c8fdc: silver, gold and diamond coins) and a gem's
+ * (CollectableGem, 0x78f3d4) to the listeners that keep the wallet. The
+ * click that starts the flight (0xa9cac8, 0xa9cb50), the sun in flight
+ * (0xaa3760) and the level's statistics read the same functions, so scaling
+ * each value at its source keeps them all agreeing. Fake coins, tickets,
+ * mints and crowns have value functions of their own and are left alone.
+ * Each needs a hook, so the sites are baked into the converted library (the
+ * game data file's driver_hook_sites); a build without one logs that its
+ * multiplier does nothing.
+ *
+ * These addresses were read in AltVerZ 1.8.3f's libPVZ2, which is this
+ * build's code with a different build id and five strings. Before a site is
+ * hooked or called, the words after its first instruction are compared with
+ * the ones read there (the last is a call whose offset pins the function's
+ * place), so a build where they moved is left alone with a log line. */
+#define GUEST_SET_PLANT_FOOD       0xaa390c
+#define GUEST_BOARD_PLANT_FOOD     0x140
+#define GUEST_BOARD_PLANT_FOOD_MAX 0x2e6
+#define GUEST_COIN_VALUE           0x9c8fdc
+#define GUEST_GEM_VALUE            0x78f3d4
+#define PVZ2_CHEAT_MULTIPLIER_MAX  100
+
+/* The words at +4 .. +0x24 of each value function: its prologue, then the
+ * call to 0x14d90dc. +0x10 (mrs x20, tpidr_el0) is rewritten by the
+ * converter and is not compared; neither is +0, the baked hook's branch. */
+#define CHEAT_VALUE_PROLOGUE 0xa9024ff4, 0xa9037bfd, 0x9100c3fd, 0, 0xf9401688, 0xaa0003f3, 0x910023e0, 0xf9000fe8
+static const uint32_t g_sun_value_words[]  = { CHEAT_VALUE_PROLOGUE, 0x9435f9d3 };
+static const uint32_t g_coin_value_words[] = { CHEAT_VALUE_PROLOGUE, 0x942c4037 };
+static const uint32_t g_gem_value_words[]  = { CHEAT_VALUE_PROLOGUE, 0x94352739 };
+/* The setter's first ten words; +0x18 is an adrp to data, which the converter
+ * rewrites, and is not compared. +0x10 and +0x24 carry the two offsets. */
+static const uint32_t g_set_plant_food_words[] = {
+    0xa9bd57f6, 0xa9014ff4, 0xa9027bfd, 0x910083fd, 0x394b9808, 0x0aa17c29, 0,
+    0x6b08013f, 0x1a89c114, 0x39050014 };
+
+/* True when the game's code at guest_vaddr + 4 * (first + i) is words[i] for
+ * every non-zero word. */
+static bool guest_code_matches(uint64_t guest_vaddr, size_t first, const uint32_t *words, size_t n)
+{
+    uint8_t *code = guest_code(guest_vaddr);
+    if (!code) return false;
+    for (size_t i = 0; i < n; i++) {
+        uint32_t w = 0;
+        if (!words[i]) continue;
+        if (!guest_read_bytes((uint64_t)(uintptr_t)(code + 4 * (first + i)), &w, sizeof w) ||
+            w != words[i])
+            return false;
+    }
+    return true;
+}
+
+#define CHEAT_VALUE_WORDS (sizeof g_sun_value_words / sizeof *g_sun_value_words)
+#define CHEAT_SETTER_WORDS (sizeof g_set_plant_food_words / sizeof *g_set_plant_food_words)
+
+typedef struct {
+    const char *what;            /* for the log */
+    uint64_t site;
+    const uint32_t *words;       /* +4 onwards, CHEAT_VALUE_WORDS of them */
+    atomic_int times;            /* 1 is off */
+    int (*original)(void *object);
+} cheat_value_hook;
+
+static cheat_value_hook g_cheat_sun  = { "sun",   GUEST_SUN_VALUE,  g_sun_value_words,  1, NULL };
+static cheat_value_hook g_cheat_coin = { "coins", GUEST_COIN_VALUE, g_coin_value_words, 1, NULL };
+static cheat_value_hook g_cheat_gem  = { "gems",  GUEST_GEM_VALUE,  g_gem_value_words,  1, NULL };
+static atomic_int g_unlimited_plant_food;
+
+void tl_pvz2_set_unlimited_plant_food(int on)
+{
+    atomic_store(&g_unlimited_plant_food, on ? 1 : 0);
+    tl_log_line("pvz2: unlimited plant food is %s", on ? "on" : "off");
+}
+
+static void cheat_set_multiplier(cheat_value_hook *h, int times)
+{
+    if (times < 1) times = 1;
+    if (times > PVZ2_CHEAT_MULTIPLIER_MAX) times = PVZ2_CHEAT_MULTIPLIER_MAX;
+    atomic_store(&h->times, times);
+    tl_log_line("pvz2: the %s multiplier is x%d%s", h->what, times,
+                times > 1 && !h->original ? " (not hooked yet)" : "");
+}
+
+void tl_pvz2_set_sun_multiplier(int times)  { cheat_set_multiplier(&g_cheat_sun, times); }
+void tl_pvz2_set_coin_multiplier(int times) { cheat_set_multiplier(&g_cheat_coin, times); }
+void tl_pvz2_set_gem_multiplier(int times)  { cheat_set_multiplier(&g_cheat_gem, times); }
+
+/* The replacements. The game calls them from its own code, on its own
+ * thread, so each original is called directly, the way the mod's own
+ * replacements call theirs. */
+static int cheat_scaled(cheat_value_hook *h, void *object)
+{
+    int value = h->original(object);
+    int times = atomic_load_explicit(&h->times, memory_order_relaxed);
+    if (times > 1 && value > 0 && value <= INT32_MAX / times) value *= times;
+    return value;
+}
+static int cheat_sun_value(void *sun)   { return cheat_scaled(&g_cheat_sun, sun); }
+static int cheat_coin_value(void *coin) { return cheat_scaled(&g_cheat_coin, coin); }
+static int cheat_gem_value(void *gem)   { return cheat_scaled(&g_cheat_gem, gem); }
+
+static void cheat_install_one(int (*hook)(void *, void *, void **), cheat_value_hook *h,
+                              int (*replacement)(void *))
+{
+    void *site = guest_code(h->site);
+    void *original = NULL;
+    if (!site || !guest_code_matches(h->site, 1, h->words, CHEAT_VALUE_WORDS)) {
+        tl_log_line("pvz2: the %s multiplier: the code at guest %#llx is not the expected value "
+                    "function in this build; the multiplier does nothing",
+                    h->what, (unsigned long long)h->site);
+        return;
+    }
+    if (!hook || hook(site, (void *)replacement, &original) != 0 || !original || original == site) {
+        /* An unbaked site comes back as itself: the request was not applied. */
+        tl_log_line("pvz2: the %s multiplier: guest %#llx is not a baked hook site in this "
+                    "build; the multiplier does nothing", h->what, (unsigned long long)h->site);
+        return;
+    }
+    h->original = (int (*)(void *))original;
+    tl_log_line("pvz2: the %s multiplier: hooked the value function (guest %#llx), x%d",
+                h->what, (unsigned long long)h->site, atomic_load(&h->times));
+}
+
+static void cheats_install_hooks(void)
+{
+    /* Only a converted library has baked sites; the shim's A64HookFunction is
+     * what fills one, the same function the mod's hooks go through. */
+    int (*hook)(void *, void *, void **) =
+        tl_aot_ready() ? (int (*)(void *, void *, void **))dlsym(RTLD_DEFAULT, "A64HookFunction") : NULL;
+    cheat_install_one(hook, &g_cheat_sun, cheat_sun_value);
+    cheat_install_one(hook, &g_cheat_coin, cheat_coin_value);
+    cheat_install_one(hook, &g_cheat_gem, cheat_gem_value);
+}
+
+/* The refill, on the game's own thread after a frame. Only in PlayingLevel:
+ * the level's own start sets its count before then. */
+static void guest_refill_plant_food(void)
+{
+    static int checked;   /* 0 not yet, 1 the setter is the expected one, -1 it is not */
+    if (!atomic_load(&g_unlimited_plant_food)) return;
+    if (!checked) {
+        checked = guest_code_matches(GUEST_SET_PLANT_FOOD, 0, g_set_plant_food_words, CHEAT_SETTER_WORDS) ? 1 : -1;
+        if (checked < 0)
+            tl_log_line("pvz2: unlimited plant food: the code at guest %#x is not the expected "
+                        "setter in this build; nothing is refilled", GUEST_SET_PLANT_FOOD);
+    }
+    if (checked < 0) return;
+    bool ok = false;
+    uint64_t board = guest_call2(guest_code(GUEST_BOARD_GETTER), 0, 0, &ok);
+    int32_t state = -1;
+    uint8_t count = 0, max = 0;
+    if (!ok || !board ||
+        !guest_read_bytes(board + 0xe0, &state, sizeof state) || state != 5 ||
+        !guest_read_bytes(board + GUEST_BOARD_PLANT_FOOD, &count, sizeof count) ||
+        !guest_read_bytes(board + GUEST_BOARD_PLANT_FOOD_MAX, &max, sizeof max) ||
+        count >= max)
+        return;
+    guest_call2(guest_code(GUEST_SET_PLANT_FOOD), board, max, &ok);
+    tl_log_line("pvz2: unlimited plant food: %s %d -> %d", ok ? "refilled" : "could not refill",
+                (int)count, (int)max);
 }
 
 /* ---- fast-forward, plant food and power-ups -----------------------------
@@ -4540,6 +4725,8 @@ static void *gl_main(void *arg)
             guest_seed_pick(atomic_load(&g_seed_pick_slot));
         if (atomic_exchange(&g_collect_sun_pending, 0)) guest_collect_sun();
         if (atomic_exchange(&g_fast_forward_pending, 0)) guest_fast_forward();
+        /* Unlimited plant food: a used one is back a few frames later. */
+        if ((tl_pvz2_frames() % 10) == 0) guest_refill_plant_food();
         /* The plant food and power-up presses are taps: the down now, the up
          * a frame later, as a finger does. */
         if (g_plant_food_touch_down) {
