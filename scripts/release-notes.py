@@ -23,9 +23,12 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NOTES = os.path.join(ROOT, "release-notes")
 GROUPS = [("feat", "Features"), ("fix", "Fixes"), ("perf", "Performance")]
 TITLE = re.compile(r"^(\w+)(?:\(([^)]+)\))?!?: (.+)$")
-# What each release file is, by the end of its name
-KINDS = [("-iOS.ipa", "iPhone / iPad"), ("-iOS-Full.ipa", "iPhone / iPad, game data included"),
-         ("-Mac.dmg", "Mac (Apple silicon)"), ("-Mac-Full.dmg", "Mac, game data included")]
+# What each release file is, by the end of its name (this fork's iPhone/iPad file has no
+# platform tag: PvZ2-Reflourished-modded-<game>-Darwin-<version>.ipa and ...-Full.ipa)
+KINDS = [(lambda n: n.endswith(".ipa") and not n.endswith("-Full.ipa"), "iPhone / iPad"),
+         (lambda n: n.endswith("-Full.ipa"), "iPhone / iPad, game data included"),
+         (lambda n: n.endswith("-Mac.dmg"), "Mac (Apple silicon)"),
+         (lambda n: n.endswith("-Mac-Full.dmg"), "Mac, game data included")]
 
 
 def whats_new(version):
@@ -64,9 +67,9 @@ def size(n):
 
 def downloads(release_dir):
     rows = []
-    for suffix, what in KINDS:
+    for matches, what in KINDS:
         for name in sorted(os.listdir(release_dir)):
-            if name.endswith(suffix):
+            if matches(name):
                 rows.append(f"| {what} | `{name}` | {size(os.path.getsize(os.path.join(release_dir, name)))} |")
     if not rows:
         sys.exit(f"no IPA or DMG in {release_dir}")

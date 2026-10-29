@@ -154,7 +154,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 <plist version="1.0">
 <dict>
 	<key>CFBundleExecutable</key><string>PvZ2</string>
-	<key>CFBundleIdentifier</key><string>${BUNDLE_ID:-io.github.oenderg.reflourished-darwin}</string>
+	<key>CFBundleIdentifier</key><string>${BUNDLE_ID:-io.github.pythagoras88.reflourished-modded}</string>
 	<key>CFBundleName</key><string>PvZ2 Reflourished</string>
 	<key>CFBundleDisplayName</key><string>PvZ2 Reflourished</string>
 	<key>CFBundlePackageType</key><string>APPL</string>

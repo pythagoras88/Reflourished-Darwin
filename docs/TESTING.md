@@ -28,7 +28,7 @@ What it sets (you can set these yourself when running the binary by hand):
 | `TL_PVZ2_MAIN_TAR` | override the writable CDN cache path; skips bundle staging (use a test copy) |
 | `TL_PVZ2_FRAMES`, `TL_PVZ2_FRAME_EVERY` | save only this app's rendered frame as `latest.bmp` in an existing directory, every N frames; works with the lid closed |
 | `TL_PVZ2_LOG` | where the log goes |
-| `TL_PVZ2_UNLIMITED_PLANT_FOOD=1`, `TL_PVZ2_SUN_MULTIPLIER=<n>`, `TL_PVZ2_COIN_MULTIPLIER=<n>`, `TL_PVZ2_GEM_MULTIPLIER=<n>` | the cheats, over the app's own settings; the log says `pvz2: unlimited plant food: refilled 2 -> 3` after a use and `pvz2: the coins multiplier: hooked the value function` at start (a build converted before the hook sites were added says a multiplier does nothing: convert again, without `--quick`) |
+| `TL_PVZ2_UNLIMITED_PLANT_FOOD=1`, `TL_PVZ2_SUN_MULTIPLIER=<n>`, `TL_PVZ2_COIN_MULTIPLIER=<n>`, `TL_PVZ2_GEM_MULTIPLIER=<n>` | the cheats, over the app's own settings; the log says `pvz2: unlimited plant food: refilled 2 -> 3 (the most the game gave)` after a use and `pvz2: the coins multiplier: hooked the value function` at start (a build converted before the hook sites were added says a multiplier does nothing: convert again, without `--quick`) |
 | `TL_PVZ2_IMPORT_FROM=<domain>` | import settings once from this domain; background tests otherwise skip import. Use a test bundle ID and test domains only. |
 | `TL_PVZ2_TAP`, `TL_PVZ2_TAP_DELAY` | the tap script, and the seconds before it starts (default 3) |
 | `TL_PVZ2_QUIET=1` | a test window: small, in the corner, never takes the focus, never remembered |
@@ -133,14 +133,14 @@ The public Mac app imports its pre-release settings once, before any setting is 
 source was empty. The source is only read. Background test launches skip the import entirely
 unless `TL_PVZ2_IMPORT_FROM` names a source domain. The runner passes through environment variables.
 
-Build a test copy with `BUNDLE_ID=io.github.oenderg.reflourished-darwin.importtest` and use only
+Build a test copy with `BUNDLE_ID=io.github.pythagoras88.reflourished-modded.importtest` and use only
 test domains. For example, after building that copy:
 
 ```sh
 defaults write io.github.oenderg.importtest.src resizeMode -string Adapt
 defaults write io.github.oenderg.importtest.src closeAction -string pause
 TL_PVZ2_IMPORT_FROM=io.github.oenderg.importtest.src scripts/test-run.sh --seconds 15
-defaults read io.github.oenderg.reflourished-darwin.importtest
+defaults read io.github.pythagoras88.reflourished-modded.importtest
 ```
 
 The log names the source, destination and key count. Run again with the same source: the log
@@ -158,7 +158,7 @@ point it elsewhere), a throwaway key and a local feed. Never sign a test with th
 openssl genpkey -algorithm ed25519 -outform DER -out k.der
 tail -c 32 k.der | base64 > test-private.txt
 openssl pkey -inform DER -in k.der -pubout -outform DER | tail -c 32 | base64 > test-public.txt
-export BUNDLE_ID=io.github.oenderg.reflourished-darwin.updatetest DATA_FOLDER="PvZ2 Reflourished Update Test"
+export BUNDLE_ID=io.github.pythagoras88.reflourished-modded.updatetest DATA_FOLDER="PvZ2 Reflourished Update Test"
 export SPARKLE_PUBLIC_KEY="$(cat test-public.txt)" SPARKLE_FEED_URL=http://127.0.0.1:8799/appcast.xml
 APP_BUILD=99 ./build.sh --mac --obb <obb> --apk <apk> --out out/update-old      # full, older
 ./build.sh --mac --slim --apk <apk> --out out/update-new                        # slim, newer
@@ -259,10 +259,10 @@ optionally a save (`$C/Documents/data` takes a test run's `data/` folder as it i
 ```sh
 xcrun simctl boot "iPhone 18 Pro"
 xcrun simctl install booted out/PvZ2-Reflourished-sim.app
-C="$(xcrun simctl get_app_container booted io.github.oenderg.reflourished-darwin data)"
+C="$(xcrun simctl get_app_container booted io.github.pythagoras88.reflourished-modded data)"
 mkdir -p "$C/Documents/obb"
 cp out/.work/game.obb "$C/Documents/obb/main.675.com.ea.game.pvz2_rfl.obb"
-SIMCTL_CHILD_TL_PVZ2_TAP="1310,1100;wait:14" xcrun simctl launch booted io.github.oenderg.reflourished-darwin
+SIMCTL_CHILD_TL_PVZ2_TAP="1310,1100;wait:14" xcrun simctl launch booted io.github.pythagoras88.reflourished-modded
 xcrun simctl io booted screenshot --mask=black out/ios-sim.png
 ```
 

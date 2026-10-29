@@ -39,8 +39,8 @@ builds come from its **Actions** tab (see below). Everything else works the same
 
 | Cheat | What it does |
 |---|---|
-| **Unlimited plant food** | The counter fills back up a moment after you use one, in every level that has plant food. |
-| **Sun multiplier** (×2 to ×20) | Every sun you collect is worth more: ×10 makes a 25 sun worth 250. The level's own sun limit still applies. |
+| **Unlimited plant food** | Once the game has given you plant food in a level, a used one comes back a moment later. It never gives you plant food the game hasn't, so the first levels' tutorials still decide when you get it. |
+| **Sun multiplier** (×2, ×3, ×4, ×5, ×10, ×20) | Every sun you collect is worth more: ×10 makes a 25 sun worth 250. The level's own sun limit still applies. |
 | **Coin multiplier** (×2 to ×10) | Every silver, gold and diamond coin you collect on the lawn is worth more. Fake coins and level rewards are not changed. |
 | **Gem multiplier** (×2 to ×10) | Every gem you collect on the lawn is worth more. |
 
@@ -49,6 +49,11 @@ All of them are **off until you turn them on**, and a change applies while you p
 * **iPhone and iPad:** the iOS **Settings** app > **PvZ2 Reflourished** (the page appears after the
   app's first launch). A change takes effect when you switch back to the game.
 * **Mac:** Settings (`Cmd-,`) > General > Cheats.
+
+**It is its own app.** This fork's builds use the app ID `io.github.pythagoras88.reflourished-modded`, so they install
+beside the original (`io.github.oenderg.reflourished-darwin`) instead of replacing it, with their own saves on iPhone and
+iPad. The downloads are named like `PvZ2-Reflourished-modded-1.4.2-Darwin-1.2.0.ipa`. What changed, and when, is in
+[CHANGELOG.md](CHANGELOG.md).
 
 They work through the game's own code: plant food is refilled with the game's own setter, and the
 multipliers scale a collected item's value where the game reads it, so the counters, the sun cap
@@ -65,7 +70,7 @@ the code there is what it expects; if it is not, that cheat stays off and the ap
   checks that it is the exact supported version). Left empty, the workflow looks for an `.apk`
   attached to a *draft* release of this repository, which only you can see.
 * **What to build / downloads:** e.g. iPhone/iPad and Slim.
-* **Publish:** turn it **off** for a private test build. The `.ipa` is then kept on the run's page under **Artifacts** for 14 days.
+* **Publish:** turn it **off** for a private test build. The `.ipa` is then kept on the run's page under **Artifacts** for 14 days (`PvZ2-Reflourished-modded-<game>-Darwin-<version>.ipa`).
 * **Runner:** `macos-26` by default. If the job sits in the queue (GitHub sometimes has no Apple
   silicon Mac free), pick `macos-15-intel`, which builds the iPhone/iPad app.
 
@@ -90,7 +95,7 @@ data.
   * `Esc` pauses and resumes. The keys rest while the game is paused.
   * On the Mac, Settings (`Cmd-,`) lets you pick any keys.
 * **Cheats** (off unless you turn them on)
-  * **Unlimited plant food**: the counter fills back up a moment after you use one.
+  * **Unlimited plant food**: once the game has given you plant food, a used one comes back a moment later.
   * **Sun, coin and gem multipliers**: every sun, coin (silver, gold and diamond) and gem you
     collect on the lawn is worth more (sun ×10: 250 instead of 25), up to the game's own limits.
   * On the Mac they are in Settings (`Cmd-,`) > General; on iPhone and iPad in the Settings app,
@@ -149,10 +154,10 @@ downloads for each platform:
 
 | File | What it is |
 |---|---|
-| `PvZ2-Reflourished-<game>-Darwin-<version>-iOS.ipa` | iPhone and iPad, slim (about 60 MB) |
-| `PvZ2-Reflourished-<game>-Darwin-<version>-iOS-Full.ipa` | iPhone and iPad, with the game's data inside (about 1.3 GB) |
-| `PvZ2-Reflourished-<game>-Darwin-<version>-Mac.dmg` | Mac, slim |
-| `PvZ2-Reflourished-<game>-Darwin-<version>-Mac-Full.dmg` | Mac, with the game's data inside |
+| `PvZ2-Reflourished-modded-<game>-Darwin-<version>.ipa` | iPhone and iPad, slim (about 60 MB) |
+| `PvZ2-Reflourished-modded-<game>-Darwin-<version>-Full.ipa` | iPhone and iPad, with the game's data inside (about 1.3 GB) |
+| `PvZ2-Reflourished-modded-<game>-Darwin-<version>-Mac.dmg` | Mac, slim |
+| `PvZ2-Reflourished-modded-<game>-Darwin-<version>-Mac-Full.dmg` | Mac, with the game's data inside |
 
 A slim app downloads the game's data (1.3 GB) the first time it opens and checks it, so keep
 it open on Wi-Fi until the game starts.
