@@ -27,7 +27,7 @@ request looks like. If you use an AI agent, point it at [AGENTS.md](AGENTS.md).
 - For iPhone/iPad, `./build.sh --ios --slim --apk ...` gives `out/PvZ2-Reflourished.ipa`; sideload
   it. To sign it yourself, `SIGN_IDENTITY`, `SIGN_PROFILE` (and `SIGN_KEYCHAIN`) are passed through to
   `runtime/tools/regress/build-ios-app.sh`; `BUNDLE_ID` sets the app ID for a test copy on either platform. The public ID is
-  `io.github.oenderg.reflourished-darwin` on both.
+  `io.github.pythagoras88.reflourished-modded` on both.
 - The app's log: `~/Library/Application Support/PvZ2 Reflourished/pvz2.log` on the Mac (a test run
   writes to its `TL_PVZ2_LOG` instead), and `Documents/pvz2.log` on iOS (Files app: On My iPhone >
   PvZ2 Reflourished). Each launch starts a new one; the run before is `pvz2.previous.log` next to it.

@@ -40,7 +40,7 @@ builds come from its **Actions** tab (see below). Everything else works the same
 | Cheat | What it does |
 |---|---|
 | **Unlimited plant food** | Once the game has given you plant food in a level, a used one comes back a moment later. It never gives you plant food the game hasn't, so the first levels' tutorials still decide when you get it. |
-| **Sun multiplier** (×2 to ×20) | Every sun you collect is worth more: ×10 makes a 25 sun worth 250. The level's own sun limit still applies. |
+| **Sun multiplier** (×2, ×3, ×4, ×5, ×10, ×20) | Every sun you collect is worth more: ×10 makes a 25 sun worth 250. The level's own sun limit still applies. |
 | **Coin multiplier** (×2 to ×10) | Every silver, gold and diamond coin you collect on the lawn is worth more. Fake coins and level rewards are not changed. |
 | **Gem multiplier** (×2 to ×10) | Every gem you collect on the lawn is worth more. |
 

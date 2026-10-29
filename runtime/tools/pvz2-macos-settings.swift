@@ -395,7 +395,7 @@ private struct GeneralPane: View {
                         .toggleStyle(.switch)
                         .labelsHidden()
                 }
-                MultiplierRow(title: "Sun multiplier", value: $sunMultiplier, choices: [2, 3, 5, 10, 20])
+                MultiplierRow(title: "Sun multiplier", value: $sunMultiplier, choices: [2, 3, 4, 5, 10, 20])
                 MultiplierRow(title: "Coin multiplier", value: $coinMultiplier, choices: [2, 3, 5, 10])
                 MultiplierRow(title: "Gem multiplier", value: $gemMultiplier, choices: [2, 3, 5, 10])
             } header: {

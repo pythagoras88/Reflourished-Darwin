@@ -33,7 +33,7 @@ if [ "${IOS_SIM:-0}" = 1 ]; then
     SDK_ARGS=(-isysroot "$(xcrun --sdk "$SDKNAME" --show-sdk-path)")
 fi
 # A specific provisioning profile fixes the bundle ID; override when signing with one.
-BUNDLE_ID="${BUNDLE_ID:-io.github.oenderg.reflourished-darwin}"
+BUNDLE_ID="${BUNDLE_ID:-io.github.pythagoras88.reflourished-modded}"
 
 [ -f "$ANGLE" ] || { echo "no ANGLE at $ANGLE -- run scripts/build_angle_ios.sh first" >&2; exit 1; }
 
@@ -271,8 +271,8 @@ cat > "$APP/Settings.bundle/Root.plist" <<'PLIST'
             <key>Title</key><string>Sun multiplier</string>
             <key>Key</key><string>sunMultiplier</string>
             <key>DefaultValue</key><integer>1</integer>
-            <key>Titles</key><array><string>Off</string><string>x2</string><string>x3</string><string>x5</string><string>x10</string><string>x20</string></array>
-            <key>Values</key><array><integer>1</integer><integer>2</integer><integer>3</integer><integer>5</integer><integer>10</integer><integer>20</integer></array>
+            <key>Titles</key><array><string>Off</string><string>x2</string><string>x3</string><string>x4</string><string>x5</string><string>x10</string><string>x20</string></array>
+            <key>Values</key><array><integer>1</integer><integer>2</integer><integer>3</integer><integer>4</integer><integer>5</integer><integer>10</integer><integer>20</integer></array>
         </dict>
         <dict>
             <key>Type</key><string>PSMultiValueSpecifier</string>

@@ -49,7 +49,7 @@ You need the game's APK (the user's own file; never commit it, or the OBB, or an
 
 - **Never commit game files** (APK, OBB, `.so`, extracted assets, saves) or personal data
   (paths under your home folder, device IDs, signing identities).
-- **Never change the app IDs** (`io.github.oenderg.reflourished-darwin` on iOS and Mac): players' saves and settings hang off them.
+- **Never change the app IDs** (`io.github.pythagoras88.reflourished-modded` on iOS and Mac in this fork, which installs beside upstream's `io.github.oenderg.reflourished-darwin` on purpose): players' saves and settings hang off them.
 - **Never change `sparkle/public-key`**: installed Mac apps accept only updates signed with its private half ([docs/RELEASING.md](docs/RELEASING.md)).
 - **The supported game build is exact.** `build.sh` refuses any other `libPVZ2.so`. Every game
   address in the driver (`GUEST_*`) is valid for 1.4.2 only: [docs/GAME-NOTES.md](docs/GAME-NOTES.md),

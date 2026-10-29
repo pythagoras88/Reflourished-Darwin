@@ -89,8 +89,8 @@ Mac DMG and commits the Mac update feed `sparkle/appcast.xml` (`chore(sparkle): 
 
 - **iPhone/iPad**: the IPA is ad-hoc signed. Every sideloader (AltStore, SideStore, Sideloadly,
   LiveContainer) re-signs it with the installing person's own Apple ID, so updates keep their data
-  as long as the app ID (`io.github.oenderg.reflourished-darwin`) stays the same.
-- **Mac**: the same app ID, `io.github.oenderg.reflourished-darwin`. The app imports the pre-release
+  as long as the app ID (`io.github.pythagoras88.reflourished-modded`) stays the same.
+- **Mac**: the same app ID, `io.github.pythagoras88.reflourished-modded`. The app imports the pre-release
   Mac settings once before reading them, leaving the old settings untouched. Background tests
   skip this import unless they set `TL_PVZ2_IMPORT_FROM` (see [TESTING.md](TESTING.md)). Saves stay
   in the same data folder. `BUNDLE_ID` overrides the ID on either platform for test or device builds.
