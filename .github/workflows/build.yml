@@ -74,7 +74,7 @@ jobs:
           echo "version=$APP_VERSION" >> "$GITHUB_OUTPUT"
           echo "game=$GAME_VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=${RELEASE_TAG:-v$APP_VERSION}" >> "$GITHUB_OUTPUT"
-          echo "prefix=PvZ2-Reflourished-$GAME_VERSION-Darwin-$APP_VERSION" >> "$GITHUB_OUTPUT"
+          echo "prefix=PvZ2-Reflourished-modded-$GAME_VERSION-Darwin-$APP_VERSION" >> "$GITHUB_OUTPUT"
 
       - name: The APK
         id: apk

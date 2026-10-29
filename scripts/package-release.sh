@@ -14,7 +14,7 @@ import sys
 
 out, release = map(Path, sys.argv[1:3])
 variant, version, game = sys.argv[3:]
-prefix = f"PvZ2-Reflourished-{game}-Darwin-{version}"
+prefix = f"PvZ2-Reflourished-modded-{game}-Darwin-{version}"
 suffix = "-Full" if variant == "full" else ""
 files = [(out / f"PvZ2-Reflourished.{ext}", release / f"{prefix}-{platform}{suffix}.{ext}")
          for ext, platform in [("ipa", "iOS"), ("dmg", "Mac")]

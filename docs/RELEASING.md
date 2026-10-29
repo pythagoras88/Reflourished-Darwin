@@ -35,13 +35,13 @@ The release title is `Reflourished-Darwin <version> · PvZ2: Reflourished <game>
 A release of both platforms and variants holds:
 
 ```text
-PvZ2-Reflourished-<game>-Darwin-<version>-iOS.ipa
-PvZ2-Reflourished-<game>-Darwin-<version>-iOS-Full.ipa
-PvZ2-Reflourished-<game>-Darwin-<version>-Mac.dmg
-PvZ2-Reflourished-<game>-Darwin-<version>-Mac-Full.dmg
+PvZ2-Reflourished-modded-<game>-Darwin-<version>-iOS.ipa
+PvZ2-Reflourished-modded-<game>-Darwin-<version>-iOS-Full.ipa
+PvZ2-Reflourished-modded-<game>-Darwin-<version>-Mac.dmg
+PvZ2-Reflourished-modded-<game>-Darwin-<version>-Mac-Full.dmg
 ```
 
-For example: `PvZ2-Reflourished-1.4.2-Darwin-1.0.0-iOS.ipa`. Slim is a small download; the app
+For example: `PvZ2-Reflourished-modded-1.4.2-Darwin-1.2.0-iOS.ipa`. Slim is a small download; the app
 downloads the game's data on first launch. Full has the data inside, for an offline first launch.
 Selecting one platform or variant publishes just those files.
 

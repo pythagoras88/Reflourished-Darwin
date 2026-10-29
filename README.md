@@ -65,7 +65,7 @@ the code there is what it expects; if it is not, that cheat stays off and the ap
   checks that it is the exact supported version). Left empty, the workflow looks for an `.apk`
   attached to a *draft* release of this repository, which only you can see.
 * **What to build / downloads:** e.g. iPhone/iPad and Slim.
-* **Publish:** turn it **off** for a private test build. The `.ipa` is then kept on the run's page under **Artifacts** for 14 days.
+* **Publish:** turn it **off** for a private test build. The `.ipa` is then kept on the run's page under **Artifacts** for 14 days (`PvZ2-Reflourished-modded-<game>-Darwin-<version>-iOS.ipa`).
 * **Runner:** `macos-26` by default. If the job sits in the queue (GitHub sometimes has no Apple
   silicon Mac free), pick `macos-15-intel`, which builds the iPhone/iPad app.
 
@@ -149,10 +149,10 @@ downloads for each platform:
 
 | File | What it is |
 |---|---|
-| `PvZ2-Reflourished-<game>-Darwin-<version>-iOS.ipa` | iPhone and iPad, slim (about 60 MB) |
-| `PvZ2-Reflourished-<game>-Darwin-<version>-iOS-Full.ipa` | iPhone and iPad, with the game's data inside (about 1.3 GB) |
-| `PvZ2-Reflourished-<game>-Darwin-<version>-Mac.dmg` | Mac, slim |
-| `PvZ2-Reflourished-<game>-Darwin-<version>-Mac-Full.dmg` | Mac, with the game's data inside |
+| `PvZ2-Reflourished-modded-<game>-Darwin-<version>-iOS.ipa` | iPhone and iPad, slim (about 60 MB) |
+| `PvZ2-Reflourished-modded-<game>-Darwin-<version>-iOS-Full.ipa` | iPhone and iPad, with the game's data inside (about 1.3 GB) |
+| `PvZ2-Reflourished-modded-<game>-Darwin-<version>-Mac.dmg` | Mac, slim |
+| `PvZ2-Reflourished-modded-<game>-Darwin-<version>-Mac-Full.dmg` | Mac, with the game's data inside |
 
 A slim app downloads the game's data (1.3 GB) the first time it opens and checks it, so keep
 it open on Wi-Fi until the game starts.
