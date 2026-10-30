@@ -4,6 +4,15 @@ What this fork ([pythagoras88/Reflourished-Darwin](https://github.com/pythagoras
 [oenderg/Reflourished-Darwin](https://github.com/oenderg/Reflourished-Darwin). The original project's own release
 notes are in [release-notes/](release-notes/).
 
+## 2026-10-30
+
+- **Give gems**: adds 100, 1,000 or 10,000 gems once, through the game's own wallet. On iPhone and
+  iPad it is a choice in the Settings app that is used when you switch back to the game and then
+  resets itself; on the Mac it is a button in Settings > General.
+- **The gem multiplier now covers rewards**: quest and Weekly Challenge gems are multiplied too, not
+  only gems you collect on the lawn (×10: a 3-gem reward gives 30). A collected gem is still
+  multiplied once.
+
 ## 2026-10-29
 
 **Cheats**, all off until you turn them on: on iPhone and iPad in the iOS Settings app under

@@ -41,6 +41,8 @@ private enum Key {
     static let sunMultiplier = "sunMultiplier"
     static let coinMultiplier = "coinMultiplier"
     static let gemMultiplier = "gemMultiplier"
+    /// A one-time grant: the host gives this many and sets it back to 0
+    static let giveGems = "giveGems"
     /// Sparkle's own key; the host hands a change to the updater
     static let automaticChecks = "SUEnableAutomaticChecks"
 }
@@ -398,10 +400,19 @@ private struct GeneralPane: View {
                 MultiplierRow(title: "Sun multiplier", value: $sunMultiplier, choices: [2, 3, 4, 5, 10, 20])
                 MultiplierRow(title: "Coin multiplier", value: $coinMultiplier, choices: [2, 3, 5, 10])
                 MultiplierRow(title: "Gem multiplier", value: $gemMultiplier, choices: [2, 3, 5, 10])
+                LabeledContent("Give gems") {
+                    HStack {
+                        ForEach([100, 1000, 10000], id: \.self) { amount in
+                            Button("+\(amount.formatted())") {
+                                UserDefaults.standard.set(amount, forKey: Key.giveGems)
+                            }
+                        }
+                    }
+                }
             } header: {
                 Text("Cheats")
             } footer: {
-                Text("Unlimited plant food: once the game has given you plant food in a level, a used one comes back a moment later; it never gives you plant food the game hasn't (the first levels' tutorials decide that). The multipliers make every sun, coin (silver, gold and diamond) and gem you collect on the lawn worth more (sun ×10: 250 instead of 25), up to the game's own limits; level rewards are not changed. All of them act at once.")
+                Text("Unlimited plant food: once the game has given you plant food in a level, a used one comes back a moment later; it never gives you plant food the game hasn't (the first levels' tutorials decide that). The sun and coin multipliers make every sun and coin (silver, gold and diamond) you collect on the lawn worth more (sun ×10: 250 instead of 25), up to the game's own limits. The gem multiplier scales every gem you are given, quest and challenge rewards included. Give gems adds that many to your wallet once. All of them act at once.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
