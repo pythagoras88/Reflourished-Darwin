@@ -864,6 +864,18 @@ static void apply_cheats(void)
     was_sun = sun;
     was_coin = coin;
     was_gem = gem;
+    /* Give gems is a one-time grant: the setting is read, passed on and set back
+     * to nothing (the environment's, for the tests, once per launch). */
+    static bool env_given;
+    const char *give_env = getenv("TL_PVZ2_GIVE_GEMS");
+    NSInteger give = [d integerForKey:@"giveGems"];
+    if (give > 0) {
+        [d setInteger:0 forKey:@"giveGems"];
+        tl_pvz2_request_give_gems((int)give);
+    } else if (give_env && *give_env && !env_given) {
+        env_given = true;
+        tl_pvz2_request_give_gems(atoi(give_env));
+    }
 }
 
 static int native_shovel_mode(void)

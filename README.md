@@ -42,7 +42,8 @@ builds come from its **Actions** tab (see below). Everything else works the same
 | **Unlimited plant food** | Once the game has given you plant food in a level, a used one comes back a moment later. It never gives you plant food the game hasn't, so the first levels' tutorials still decide when you get it. |
 | **Sun multiplier** (×2, ×3, ×4, ×5, ×10, ×20) | Every sun you collect is worth more: ×10 makes a 25 sun worth 250. The level's own sun limit still applies. |
 | **Coin multiplier** (×2 to ×10) | Every silver, gold and diamond coin you collect on the lawn is worth more. Fake coins and level rewards are not changed. |
-| **Gem multiplier** (×2 to ×10) | Every gem you collect on the lawn is worth more. |
+| **Gem multiplier** (×2 to ×10) | Every gem the game gives you is multiplied: quest and Weekly Challenge rewards (×10 turns a 3-gem reward into 30) and gems you collect on the lawn. |
+| **Give gems** (100, 1,000 or 10,000) | Adds that many gems to your wallet once. On iPhone and iPad pick an amount in Settings and switch back to the game (it goes back to "Nothing" by itself); on the Mac press +100, +1,000 or +10,000. |
 
 All of them are **off until you turn them on**, and a change applies while you play:
 

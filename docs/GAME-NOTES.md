@@ -80,7 +80,8 @@ ones read there before it hooks or calls it, and leaves a build where they moved
 | 0xa9d838 | the board's collect award: per class (`0x75a52c`, `0x9c8eb4`, `0x78f2ac`, ...), its value, then AddSun or the wallet's listeners | (where the values go) |
 | 0x75a96c | a collected sun's value (`CollectableSun`) | the sun multiplier's hook |
 | 0x9c8fdc | a collected coin's value (`CollectableCoin`: silver, gold, diamond) | the coin multiplier's hook |
-| 0x78f3d4 | a collected gem's value (`CollectableGem`) | the gem multiplier's hook |
+| 0x78f3d4 | a collected gem's value (`CollectableGem`) | (not hooked: the gem multiplier is at add-gems) |
+| player +0x124 / 0x123e734, +0x12c / 0x1240514 | the wallet's coins and gems, and their add functions (the player from the singleton at 0x2569fa8, its vtable +0x18) | the gem multiplier's hook (add-gems), Give gems |
 | 0xaa4070, board +0x184 | `Board::AddSun`, `m_sunCurrency` | (not hooked, not written) |
 
 - **Unlimited plant food** is the setter, from the frame loop every 10 frames, in PlayingLevel
@@ -99,6 +100,16 @@ ones read there before it hooks or calls it, and leaves a build where they moved
   `driver_hook_sites`, baked with `--hook-site` beside the mod's table, and the driver fills their
   slots with the shim's `A64HookFunction` after the mod's hooks are in. Each starts with
   `sub sp, sp, #0x40`, which the trampoline copies as it is.
+- **The gem multiplier** hooks the player's add-gems, `0x1240514(player, amount, notify)`, instead of
+  a gem's value: most gems are quest and challenge rewards (`{"Type": "gems"}`), which never pass
+  a value function. Its callers are the reward dispatcher (`0x13d4c54`), a collected gem (`0xa9cb90`,
+  with the gem's value, so a gem is scaled once), the tutorial's one-time grant
+  (`TutorialGrantUnusedFakeGemsAction`, `0xc93990`) and a developer grant. Spending does not come
+  here, and only a positive amount is scaled. Its words at `+4 .. +0x28` are compared first
+  (`+0x1c`, an adrp to data, is rewritten by the converter and skipped).
+- **Give gems** asks the game for its player the way every wallet caller does (the singleton in
+  `.bss` at `0x2569fa8`, its vtable `+0x18`) and calls the original add-gems with the amount, past
+  the multiplier, on the game's thread once `tl_pvz2_started()` and the singleton exists.
 
 ## Generated IDs
 

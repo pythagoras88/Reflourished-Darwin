@@ -2959,6 +2959,32 @@ static uint64_t guest_call2(void *fn, uint64_t a0, uint64_t a1, bool *ok)
     return 0;
 }
 
+/* Three arguments: the player's add-gems (player, amount, notify). */
+static uint64_t guest_call3(void *fn, uint64_t a0, uint64_t a1, uint64_t a2, bool *ok)
+{
+    register void *x16 __asm__("x16") = fn;
+    register uint64_t x0 __asm__("x0") = a0;
+    register uint64_t x1 __asm__("x1") = a1;
+    register uint64_t x2 __asm__("x2") = a2;
+    *ok = false;
+    if (!fn) return 0;
+    guest_guard_enter();
+    if (sigsetjmp(g_guest_jmp, 1) == 0) {
+        __asm__ volatile("blr %1"
+                         : "+r"(x0), "+r"(x16), "+r"(x1), "+r"(x2)
+                         :
+                         : "x3","x4","x5","x6","x7","x8","x9","x10","x11","x12",
+                           "x13","x14","x15","x17","memory","cc");
+        guest_guard_leave();
+        *ok = true;
+        return x0;
+    }
+    guest_guard_leave();
+    tl_log_line("pvz2: the guest's own call faulted (signal %d); there is no answer",
+                (int)g_guest_fault);
+    return 0;
+}
+
 /* The game's own pointer-event struct: 0x34 bytes, and the int at +0x30 is
  * the type (0 is a pointer down -- the same object the shovel's call takes). */
 typedef struct { uint8_t b[0x34]; } guest_pointer_event;
@@ -3186,15 +3212,25 @@ static void guest_collect_sun(void)
  * with the max, the frame after. A level without plant food has a max of 0
  * and is left as it is.
  *
- * Sun, coins and gems. The board's collect award (0xa9d838) asks each
- * collected object's class for its value and hands it on: a sun's
- * (CollectableSun, 0x75a96c) to Board::AddSun (0xaa4070), a coin's
- * (CollectableCoin, 0x9c8fdc: silver, gold and diamond coins) and a gem's
- * (CollectableGem, 0x78f3d4) to the listeners that keep the wallet. The
- * click that starts the flight (0xa9cac8, 0xa9cb50), the sun in flight
- * (0xaa3760) and the level's statistics read the same functions, so scaling
- * each value at its source keeps them all agreeing. Fake coins, tickets,
- * mints and crowns have value functions of their own and are left alone.
+ * Sun and coins. The board's collect award (0xa9d838) asks each collected
+ * object's class for its value and hands it on: a sun's (CollectableSun,
+ * 0x75a96c) to Board::AddSun (0xaa4070), a coin's (CollectableCoin,
+ * 0x9c8fdc: silver, gold and diamond coins) to the wallet. The click that
+ * starts the flight (0xa9cac8), the sun in flight (0xaa3760) and the level's
+ * statistics read the same functions, so scaling each value at its source
+ * keeps them all agreeing. Fake coins, tickets, mints and crowns have value
+ * functions of their own and are left alone.
+ *
+ * Gems. Most come as quest and challenge rewards ({"Type": "gems"}), not lawn
+ * pickups, so the gem multiplier hooks the player's own add-gems,
+ * 0x1240514(player, amount, notify), which adds to the wallet's +0x12c and
+ * tells its listeners. Its callers: the reward dispatcher (0x13d4c54), a
+ * collected gem (0xa9cb90, with the gem's value), the tutorial's one-time
+ * grant (0xc93990) and a developer grant. Spending does not come here, and
+ * only a positive amount is scaled. (The gem's own value is not hooked, so a
+ * collected gem is scaled once.) Give gems calls the original with the amount
+ * asked for, once the game has made its player.
+ *
  * Each needs a hook, so the sites are baked into the converted library (the
  * game data file's driver_hook_sites); a build without one logs that its
  * multiplier does nothing.
@@ -3208,8 +3244,14 @@ static void guest_collect_sun(void)
 #define GUEST_BOARD_PLANT_FOOD     0x140
 #define GUEST_BOARD_PLANT_FOOD_MAX 0x2e6
 #define GUEST_COIN_VALUE           0x9c8fdc
-#define GUEST_GEM_VALUE            0x78f3d4
+#define GUEST_ADD_GEMS             0x1240514
+/* The singleton the wallet hangs off, and its vtable slot that answers the
+ * player: every add-coins and add-gems caller asks it this way (0x11641e8,
+ * 0xa9cb5c). It is in libPVZ2's .bss, made by the game on first use. */
+#define GUEST_PLAYER_SOURCE_SLOT   0x2569fa8
+#define GUEST_PLAYER_SOURCE_PLAYER 0x18
 #define PVZ2_CHEAT_MULTIPLIER_MAX  100
+#define PVZ2_GIVE_GEMS_MAX         1000000
 
 /* The words at +4 .. +0x24 of each value function: its prologue, then the
  * call to 0x14d90dc. +0x10 (mrs x20, tpidr_el0) is rewritten by the
@@ -3217,7 +3259,12 @@ static void guest_collect_sun(void)
 #define CHEAT_VALUE_PROLOGUE 0xa9024ff4, 0xa9037bfd, 0x9100c3fd, 0, 0xf9401688, 0xaa0003f3, 0x910023e0, 0xf9000fe8
 static const uint32_t g_sun_value_words[]  = { CHEAT_VALUE_PROLOGUE, 0x9435f9d3 };
 static const uint32_t g_coin_value_words[] = { CHEAT_VALUE_PROLOGUE, 0x942c4037 };
-static const uint32_t g_gem_value_words[]  = { CHEAT_VALUE_PROLOGUE, 0x94352739 };
+/* add-gems' words at +4 .. +0x28: its prologue, then the load, the add and
+ * the store of the wallet's +0x12c. +0x1c is an adrp to data, which the
+ * converter rewrites, and is not compared. */
+static const uint32_t g_add_gems_words[] = {
+    0xa90157f6, 0xa9024ff4, 0xa9037bfd, 0x9100c3fd, 0xb9412c08, 0x2a0103f4, 0,
+    0x2a0203f6, 0x0b140108, 0xb9012c08 };
 /* The setter's first ten words; +0x18 is an adrp to data, which the converter
  * rewrites, and is not compared. +0x10 and +0x24 carry the two offsets. */
 static const uint32_t g_set_plant_food_words[] = {
@@ -3242,6 +3289,7 @@ static bool guest_code_matches(uint64_t guest_vaddr, size_t first, const uint32_
 
 #define CHEAT_VALUE_WORDS (sizeof g_sun_value_words / sizeof *g_sun_value_words)
 #define CHEAT_SETTER_WORDS (sizeof g_set_plant_food_words / sizeof *g_set_plant_food_words)
+#define ADD_GEMS_WORDS (sizeof g_add_gems_words / sizeof *g_add_gems_words)
 
 typedef struct {
     const char *what;            /* for the log */
@@ -3253,7 +3301,6 @@ typedef struct {
 
 static cheat_value_hook g_cheat_sun  = { "sun",   GUEST_SUN_VALUE,  g_sun_value_words,  1, NULL };
 static cheat_value_hook g_cheat_coin = { "coins", GUEST_COIN_VALUE, g_coin_value_words, 1, NULL };
-static cheat_value_hook g_cheat_gem  = { "gems",  GUEST_GEM_VALUE,  g_gem_value_words,  1, NULL };
 static atomic_int g_unlimited_plant_food;
 
 void tl_pvz2_set_unlimited_plant_food(int on)
@@ -3273,7 +3320,75 @@ static void cheat_set_multiplier(cheat_value_hook *h, int times)
 
 void tl_pvz2_set_sun_multiplier(int times)  { cheat_set_multiplier(&g_cheat_sun, times); }
 void tl_pvz2_set_coin_multiplier(int times) { cheat_set_multiplier(&g_cheat_coin, times); }
-void tl_pvz2_set_gem_multiplier(int times)  { cheat_set_multiplier(&g_cheat_gem, times); }
+
+static atomic_int g_gem_multiplier = 1;
+static void (*g_add_gems_original)(void *player, int amount, int notify);
+
+void tl_pvz2_set_gem_multiplier(int times)
+{
+    if (times < 1) times = 1;
+    if (times > PVZ2_CHEAT_MULTIPLIER_MAX) times = PVZ2_CHEAT_MULTIPLIER_MAX;
+    atomic_store(&g_gem_multiplier, times);
+    tl_log_line("pvz2: the gems multiplier is x%d%s", times,
+                times > 1 && !g_add_gems_original ? " (not hooked yet)" : "");
+}
+
+/* The replacement for the player's add-gems: a gain is scaled before the game
+ * adds it, so the wallet, its listeners and the counter see one amount. */
+static void cheat_add_gems(void *player, int amount, int notify)
+{
+    int times = atomic_load_explicit(&g_gem_multiplier, memory_order_relaxed);
+    if (times > 1 && amount > 0 && amount <= INT32_MAX / times) {
+        tl_log_line("pvz2: the gems multiplier: +%d -> +%d", amount, amount * times);
+        amount *= times;
+    }
+    g_add_gems_original(player, amount, notify);
+}
+
+/* Give gems: a one-time grant the player asks for, done with the game's own
+ * add-gems on its own thread once the game has started and has made the
+ * player. The original is called past the multiplier's hook, so the amount
+ * asked for is the amount given. A request waits until then; a build where
+ * add-gems is not the expected code gives nothing. */
+static atomic_int g_give_gems;
+static int g_add_gems_checked;   /* 0 not yet, 1 the expected code, -1 not */
+
+void tl_pvz2_request_give_gems(int amount)
+{
+    if (amount < 1) return;
+    if (amount > PVZ2_GIVE_GEMS_MAX) amount = PVZ2_GIVE_GEMS_MAX;
+    atomic_store(&g_give_gems, amount);
+    tl_log_line("pvz2: give gems: %d asked for", amount);
+}
+
+static void guest_give_gems(void)
+{
+    if (atomic_load(&g_give_gems) <= 0 || !tl_pvz2_started()) return;
+    if (!g_add_gems_checked) {
+        g_add_gems_checked = guest_code_matches(GUEST_ADD_GEMS, 1, g_add_gems_words, ADD_GEMS_WORDS) ? 1 : -1;
+        if (g_add_gems_checked < 0)
+            tl_log_line("pvz2: give gems: the code at guest %#x is not the expected add-gems in "
+                        "this build; nothing is given", GUEST_ADD_GEMS);
+    }
+    if (g_add_gems_checked < 0) {
+        atomic_store(&g_give_gems, 0);
+        return;
+    }
+    uint8_t *slot = tl_aot_guest_data_ptr("libPVZ2.so", GUEST_PLAYER_SOURCE_SLOT);
+    uint64_t source = 0, vtable = 0, fn = 0;
+    if (!slot || !guest_read_bytes((uint64_t)(uintptr_t)slot, &source, sizeof source) || !source ||
+        !guest_read_bytes(source, &vtable, sizeof vtable) || !vtable ||
+        !guest_read_bytes(vtable + GUEST_PLAYER_SOURCE_PLAYER, &fn, sizeof fn) || !fn)
+        return;   /* the game has not made its player yet: the request waits */
+    bool ok = false;
+    uint64_t player = guest_call2((void *)(uintptr_t)fn, source, 0, &ok);
+    if (!ok || !player) return;
+    int amount = atomic_exchange(&g_give_gems, 0);
+    if (amount <= 0) return;
+    void *add = g_add_gems_original ? (void *)g_add_gems_original : guest_code(GUEST_ADD_GEMS);
+    guest_call3(add, player, (uint64_t)(uint32_t)amount, 0, &ok);
+    tl_log_line("pvz2: give gems: %s %d", ok ? "gave" : "could not give", amount);
+}
 
 /* The replacements. The game calls them from its own code, on its own
  * thread, so each original is called directly, the way the mod's own
@@ -3287,7 +3402,6 @@ static int cheat_scaled(cheat_value_hook *h, void *object)
 }
 static int cheat_sun_value(void *sun)   { return cheat_scaled(&g_cheat_sun, sun); }
 static int cheat_coin_value(void *coin) { return cheat_scaled(&g_cheat_coin, coin); }
-static int cheat_gem_value(void *gem)   { return cheat_scaled(&g_cheat_gem, gem); }
 
 static void cheat_install_one(int (*hook)(void *, void *, void **), cheat_value_hook *h,
                               int (*replacement)(void *))
@@ -3319,7 +3433,22 @@ static void cheats_install_hooks(void)
         tl_aot_ready() ? (int (*)(void *, void *, void **))dlsym(RTLD_DEFAULT, "A64HookFunction") : NULL;
     cheat_install_one(hook, &g_cheat_sun, cheat_sun_value);
     cheat_install_one(hook, &g_cheat_coin, cheat_coin_value);
-    cheat_install_one(hook, &g_cheat_gem, cheat_gem_value);
+    void *site = guest_code(GUEST_ADD_GEMS);
+    void *original = NULL;
+    g_add_gems_checked = guest_code_matches(GUEST_ADD_GEMS, 1, g_add_gems_words, ADD_GEMS_WORDS) ? 1 : -1;
+    if (!site || g_add_gems_checked < 0) {
+        tl_log_line("pvz2: the gems multiplier: the code at guest %#x is not the expected add-gems "
+                    "in this build; the multiplier does nothing", GUEST_ADD_GEMS);
+        return;
+    }
+    if (!hook || hook(site, (void *)cheat_add_gems, &original) != 0 || !original || original == site) {
+        tl_log_line("pvz2: the gems multiplier: guest %#x is not a baked hook site in this build; "
+                    "the multiplier does nothing", GUEST_ADD_GEMS);
+        return;
+    }
+    g_add_gems_original = (void (*)(void *, int, int))original;
+    tl_log_line("pvz2: the gems multiplier: hooked the player's add-gems (guest %#x), x%d",
+                GUEST_ADD_GEMS, atomic_load(&g_gem_multiplier));
 }
 
 /* The refill, on the game's own thread after a frame, in PlayingLevel only.
@@ -4745,6 +4874,8 @@ static void *gl_main(void *arg)
         if (atomic_exchange(&g_fast_forward_pending, 0)) guest_fast_forward();
         /* Unlimited plant food: a used one is back a few frames later. */
         if ((tl_pvz2_frames() % 10) == 0) guest_refill_plant_food();
+        /* Give gems, once the game has its player. */
+        if ((tl_pvz2_frames() % 30) == 15) guest_give_gems();
         /* The plant food and power-up presses are taps: the down now, the up
          * a frame later, as a finger does. */
         if (g_plant_food_touch_down) {
