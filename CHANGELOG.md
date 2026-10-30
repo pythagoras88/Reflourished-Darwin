@@ -4,7 +4,7 @@ What this fork ([pythagoras88/Reflourished-Darwin](https://github.com/pythagoras
 [oenderg/Reflourished-Darwin](https://github.com/oenderg/Reflourished-Darwin). The original project's own release
 notes are in [release-notes/](release-notes/).
 
-## Unreleased
+## 2026-10-30
 
 - **Give gems**: adds 100, 1,000 or 10,000 gems once, through the game's own wallet. On iPhone and
   iPad it is a choice in the Settings app that is used when you switch back to the game and then
